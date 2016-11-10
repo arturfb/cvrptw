@@ -19,7 +19,7 @@ SET(CPLEX_ROOT_DIR "/your/path/to/cplex/folder")
   ./cvrptw <instance_file> [options]
   
 For example, assuming your are in your build directory:
-  ./cvrptw ../../instances/cordeau c101 --threads 10 --timelimit 3600
+  ./cvrptw ../../instances/cordeau/c101 --threads 10 --timelimit 3600
   
   
 Questions?
