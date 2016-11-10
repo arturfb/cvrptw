@@ -13,7 +13,7 @@ public:
    Model(IloEnv &env, Instance* inst);
    ~Model();
 
-   void run();
+   void run(const unsigned timelimit, const unsigned threads, const bool verbose);
 
    typedef IloArray<IloNumVarArray> NumVarMatrix;
    typedef IloArray<NumVarMatrix> NumVar3Matrix;

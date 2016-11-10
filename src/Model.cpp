@@ -1,6 +1,7 @@
 #include <iostream>
 #include <algorithm>
 #include <sys/time.h>
+#include <chrono>
 #include "Model.hpp"
 
 using namespace std;
@@ -166,174 +167,42 @@ Model::Model(IloEnv &env, Instance* inst) : m_instance(inst),
          constr.setName(name);
          m_model.add(constr);
       }
-   }
-
-
-
-
-
-
-
-// //////////////////////////////////////////////////////////////////////////////////////////////////////
-   
-   // // Constraints 3: sum y_ik = 1, for all customers
-   // for (unsigned i = 1; i <= m_instance->getCustomers(); i++) {
-   //    IloExpr expr(m_env);
-   //    for (unsigned k = 0; k < m_instance->getVehicles(); k++) {
-   //       expr += m_y[i][k];
-   //    }
-   //    IloConstraint constr = (expr == 1);
-   //    sprintf(name, "C3_%d", i);
-   //    constr.setName(name);
-   //    m_model.add(constr);
-   //    expr.end();
-   // }
-
-   // // Constraints 3: sum x_ijk = y_ik, for all i in customers + depot
-   // for (unsigned i = 0; i <= m_instance->getCustomers(); i++) {
-   //    for (unsigned k = 0; k < m_instance->getVehicles(); k++) {
-   //       IloExpr expr(m_env);
-   //       for (unsigned j = 1; j <= m_instance->getCustomers(); j++) {
-   //          if (i != j) {            
-   //             expr += m_x[i][j][k];
-   //          }
-   //       }
-   //       IloConstraint constr = (expr == m_y[i][k]);
-   //       sprintf(name, "C3_%d_%d", i, k);
-   //       constr.setName(name);
-   //       m_model.add(constr);
-   //       expr.end();
-   //    }
-   // }
-   
-   
-   
-   // // Constraints 5: sum q_i * y_ik <= capacity, for all vehicles
-   // for (unsigned k = 0; k < m_instance->getVehicles(); k++) {
-   //    IloExpr expr(m_env);
-   //    for (unsigned i = 1; i <= m_instance->getCustomers(); i++) {
-   //       expr += ((IloInt)m_instance->getDemand(i)*m_y[i][k]);
-   //    }
-   //    IloConstraint constr = (expr <= (IloInt)m_instance->getCapacity());
-   //    sprintf(name, "C5_%d", k);
-   //    constr.setName(name);
-   //    m_model.add(constr);
-   //    expr.end();
-   // }
-
-   // // Constraints 6: sum x_ijk = y_ik, for all customers
-   // for (unsigned i = 1; i <= m_instance->getCustomers(); i++) {
-   //    for (unsigned k = 0; k < m_instance->getVehicles(); k++) {
-   //       IloExpr expr(m_env);
-   //       for (unsigned j = 0; j <= m_instance->getCustomers(); j++) {    
-   //          expr += m_x[i][j][k];
-   //       }
-   //       IloConstraint constr = (expr == m_y[i][k]);
-   //       sprintf(name, "C6_%d_%d", i, k);
-   //       constr.setName(name);
-   //       m_model.add(constr);
-   //       expr.end();
-   //    }
-   // }
-   
-   
-   
-   
-   
-   // Constraints 6: s_ik + t_ij - K*(1-x_ijk) <= s_jk , for all customers i and j, vehicles k
-   // Note: t_ij = c_ij + d_i (i.e. distance + service duration)
-   // for (unsigned i = 0; i <= m_instance->getCustomers(); i++) {
-   //    for (unsigned j = 0; j <= m_instance->getCustomers(); j++) {
-   //       for (unsigned k = 0; k < m_instance->getVehicles(); k++) {
-   //          IloExpr expr(m_env);
-   //          IloNum tij = m_instance->getDistance(i, j) + m_instance->getService(i);
-   //          expr += (m_s[i][k] + tij);
-   //          expr -= ((IloInt)K*(1 - m_x[i][j][k]));
-   //          IloConstraint constr = (expr <= m_s[j][k]);
-   //          sprintf(name, "C6_%d_%d_%d", i, j, k);
-   //          constr.setName(name);
-   //          m_model.add(constr);
-   //          expr.end();     
-   //       }
-   //    }
-   // }
-   
-   // Constraints 7a: a_i <= s_ik <= b_i, for all customers, vehicles
-   // for (unsigned i = 0; i <= m_instance->getCustomers(); i++) {
-   //    for (unsigned k = 0; k < m_instance->getVehicles(); k++) {
-   //       for (unsigned j = 0; j <= m_instance->getCustomers(); j++) {
-   //          if (i != j) {
-   //             IloExpr expr(m_env);
-   //             expr += m_s[i][k];
-   //             IloConstraint constr = (((IloInt)m_instance->getBtw(i) * m_x[i][j][k]) <= expr);
-   //             sprintf(name, "C7a_%d_%d", i, k);
-   //             constr.setName(name);
-   //             m_model.add(constr);
-   //             expr.end();
-   //          }
-   //       }
-           
-   //    }
-   // }
-
-   // Constraints 7b: a_i <= s_ik <= b_i, for all customers, vehicles
-   // for (unsigned i = 0; i <= m_instance->getCustomers(); i++) {
-   //    for (unsigned k = 0; k < m_instance->getVehicles(); k++) {
-   //       for (unsigned j = 0; j <= m_instance->getCustomers(); j++) {
-   //          if (i != j) {
-   //             IloExpr expr(m_env);
-   //             expr += m_s[i][k];
-   //             IloConstraint constr = (expr <= ((IloInt)m_instance->getEtw(i) * m_x[i][j][k]));
-   //             sprintf(name, "C7b_%d_%d", i, k);
-   //             constr.setName(name);
-   //             m_model.add(constr);
-   //             expr.end();
-   //          }
-   //       }    
-   //    }
-   // }
-
-   // // Constraints 7a: btw_i <= s_ik, for all customers, vehicles
-   // for (unsigned i = 0; i <= m_instance->getCustomers(); i++) {   
-   //    IloExpr expr(m_env);
-   //    for (unsigned k = 0; k < m_instance->getVehicles(); k++) {   
-   //       expr += m_s[i][k];         
-   //    }
-   //    IloConstraint constr = ((IloInt)m_instance->getBtw(i) <= expr);
-   //    sprintf(name, "C7a_%d", i);
-   //    constr.setName(name);
-   //    m_model.add(constr);
-   //    expr.end();
-   // }
-
-   // // Constraints 7b: s_ik <= etw_i, for all customers, vehicles
-   // for (unsigned i = 0; i <= m_instance->getCustomers(); i++) {   
-   //    IloExpr expr(m_env);
-   //    for (unsigned k = 0; k < m_instance->getVehicles(); k++) {   
-   //       expr += m_s[i][k];         
-   //    }
-   //    IloConstraint constr = (expr <= (IloInt)m_instance->getEtw(i));
-   //    sprintf(name, "C7b_%d", i);
-   //    constr.setName(name);
-   //    m_model.add(constr);
-   //    expr.end();
-   // }
-   
-   
-
-   
-
-   // m_cplex.setParam(IloCplex::TiLim, 60);
-   // m_cplex.setParam(IloCplex::Threads, 4);
-   // m_cplex.setParam(IloCplex::MIPDisplay, 0);
-   // m_cplex.setParam(IloCplex::SimDisplay, 0);
-   m_cplex.exportModel("model.lp");
+   }   
 }
 
 Model::~Model() {
    // empty
 }
 
-void Model::run() {
-   // empty
+void Model::run(const unsigned timelimit, const unsigned threads, const bool verbose) {
+   if (timelimit > 0) {
+      m_cplex.setParam(IloCplex::TiLim, timelimit);
+   }
+   if (threads > 0) {
+      m_cplex.setParam(IloCplex::Threads, threads);
+   }
+   if (!verbose) {
+      m_cplex.setParam(IloCplex::MIPDisplay, 0);
+      m_cplex.setParam(IloCplex::SimDisplay, 0);
+   }
+   
+   m_cplex.exportModel("model.lp");
+   
+   std::chrono::system_clock::time_point start = std::chrono::system_clock::now();   
+   m_cplex.solve();
+
+   cout << "Status: " << m_cplex.getStatus() << endl;
+   cout << "Obj: " << m_cplex.getObjValue() << endl;
+
+   unsigned v = 0;
+   for (unsigned j = 1; j < m_instance->getCustomers()+1; j++) {
+      for (unsigned k = 0; k < m_instance->getVehicles(); k++) {
+         if (m_cplex.getValue(m_x[0][j][k]) > 0.5) {
+            v++;
+         }
+      }
+   }
+
+   cout << "Vehicles: " << v << endl;
+   cout << "Time: " << (float)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()-start).count()/1000 << endl;
 }

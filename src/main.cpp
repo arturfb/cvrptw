@@ -21,8 +21,8 @@ int main(int argc, char **argv){
       ("help", "show help")
       ("instance,i", po::value<vector<string>>(&iname), "instance file")
       ("timelimit,t", po::value<unsigned>(&timeLimit), "time limit in seconds")
-      ("threads", po::value<unsigned>(&threads)->default_value(4), "number of threads to use")
-      ("cplex_timelimit", po::value<unsigned>(&cplex_timelimit)->default_value(10), "cplex time limit in seconds")
+      ("threads", po::value<unsigned>(&threads)->default_value(0), "number of threads to use")
+      ("cplex_timelimit", po::value<unsigned>(&cplex_timelimit)->default_value(0), "cplex time limit in seconds")
       ("verbose,v", "verbose output")
       ;
 
@@ -51,8 +51,10 @@ int main(int argc, char **argv){
 
    IloEnv env;
    Model m(env, inst);
+   m.run(cplex_timelimit, threads, verbose);
 
 
+   env.end();
    delete inst;
    return 0;
 }
