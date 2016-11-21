@@ -4,6 +4,7 @@
 #include <ilcplex/ilocplex.h>
 #include "Instance.hpp"
 #include "Model.hpp"
+#include "VNS.hpp"
 
 using namespace std;
 
@@ -42,19 +43,32 @@ int main(int argc, char **argv){
       verbose = 1;
    }
 
-
    // cout << iname[0] << endl;
    Instance* inst =  new Instance();
    inst->loadFromFile(iname[0]);
    // cout << "Instance loaded!" << endl;
    // inst->print();
 
-   IloEnv env;
-   Model m(env, inst);
-   m.run(cplex_timelimit, threads, verbose);
+   bool heuristic_solution = true;
+
+   if (heuristic_solution) {
+   	  
+   	  VNS vns(inst);
+   	  Solution s = vns.run(verbose);
+
+   	  cout << "Total dist: " << s.getTotalDist() << endl;
+   	  cout << "Vehicles used: " << s.getVehiclesUsed() << endl;
+   }
+   else {
+  
+	  IloEnv env;
+	  Model m(env, inst);
+	  m.run(cplex_timelimit, threads, verbose);
+  
+	  env.end();
+	  delete inst;
+	}
 
 
-   env.end();
-   delete inst;
    return 0;
 }

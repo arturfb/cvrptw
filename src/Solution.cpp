@@ -18,6 +18,7 @@ Solution::Solution(Instance* inst) {
    m_routeDist.resize(m_instance->getVehicles());
    m_routeTime.resize(m_instance->getVehicles());
    m_routeSize.resize(m_instance->getVehicles());
+   m_routeLoad.resize(m_instance->getVehicles());
    m_customerTime.resize(m_instance->getCustomers()+1);
    m_customerRoute.resize(m_instance->getCustomers()+1, -1);
 }
