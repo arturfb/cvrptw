@@ -12,6 +12,7 @@ public:
    ~Solution();
    
    unsigned getSuccessor(const unsigned c, const unsigned k); // Returns the successor of client c in route k
+   unsigned getPredecessor(const unsigned c, const unsigned k); // Returns the predecessor of client c in route k
    double getTotalDist();
    double getRouteDist(const unsigned k);
    double getRouteTime(const unsigned k);
@@ -29,7 +30,7 @@ public:
 private:
    Instance* m_instance;
    std::vector<std::vector<unsigned>> m_succ; // Successor of each customer
-   std::vector<std::vector<unsigned>> m_pred; // Predecessor of each customer ** Not used **
+   std::vector<std::vector<unsigned>> m_pred; // Predecessor of each customer
    std::vector<double> m_routeDist;       // Total distance of a route
    std::vector<double> m_routeTime;       // Total time taken by a route ** Not used **
    std::vector<unsigned> m_routeSize;     // Number of clients in a route

@@ -50,6 +50,10 @@ unsigned Solution::getSuccessor(const unsigned c, const unsigned k) {
    return m_succ[k][c];
 }
 
+unsigned Solution::getPredecessor(const unsigned c, const unsigned k) {
+   return m_pred[k][c];
+}
+
 double Solution::getRouteDist(const unsigned k) {
    return m_routeDist[k];
 }
@@ -87,7 +91,9 @@ unsigned Solution::getVehiclesUsed() {
 void Solution::addToRoute(const unsigned u, const unsigned v, const unsigned k) {
    unsigned w = m_succ[k][u];
    m_succ[k][u] = v;
+   m_pred[k][v] = u;
    m_succ[k][v] = w;
+   m_pred[k][w] = v;
 
    // Update route distance, time, size and load
    m_routeSize[k]++;
@@ -102,6 +108,7 @@ void Solution::addToRoute(const unsigned u, const unsigned v, const unsigned k) 
 void Solution::remFromRoute(const unsigned u, const unsigned v, const unsigned k) {
    unsigned w = m_succ[k][v];
    m_succ[k][u] = w;
+   m_pred[k][w] = u;
 
    // Update route dist, time, size and load
    m_routeSize[k]--;
