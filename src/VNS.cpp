@@ -37,13 +37,6 @@ void VNS::run(const bool verbose) {
 	* starts at the first route
 	* starting at the depot, searches for the nearest feasible customer to add to the current route
 	* if there is no such customer, proceed to the next route
-
-	current issues:
-	1. TONN is unable to build a route, for a large number of Cordeau's and Solomon's instances.
-		* this happens because the number of vehicles is exhausted before all customers are serviced
-		* the percentage of serviced customers ranges from 30% to 76% for "c" instances ("c101","c102", etc.) of the Cordeau dataset
-		* proposed solution: to work in the infeasibility. if the number of vehicles is exhausted, restart TONN relaxing the time windows constraints
-
 */
 Solution VNS::tonn() {
    Solution s(m_instance);
