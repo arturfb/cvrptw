@@ -112,3 +112,19 @@ void Solution::remFromRoute(const unsigned u, const unsigned v, const unsigned k
    m_routeLoad[k] -= m_instance->getDemand(v);
    m_customerRoute[v] = -1;
 }
+
+void Solution::print() {
+   unsigned routeCount = 0;
+   for (unsigned k = 0; k < m_succ.size(); k++) {
+      if (m_succ[k][0] != 0) {
+         cout << "Route " << routeCount << ": ";
+         unsigned c = 0;
+         do {
+            cout << c << " ";
+            c = m_succ[k][c];
+         } while (c != 0);
+         cout << endl;
+         routeCount++;
+      }
+   }
+}

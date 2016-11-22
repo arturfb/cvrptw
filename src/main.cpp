@@ -20,6 +20,7 @@ int main(int argc, char **argv){
    po::options_description desc("Usage: ./cvrptw instance_file [Options]\nOptions");
    desc.add_options()
       ("help", "show help")
+      ("exact,e", "solve with cplex")
       ("instance,i", po::value<vector<string>>(&iname), "instance file")
       ("timelimit,t", po::value<unsigned>(&timeLimit), "time limit in seconds")
       ("threads", po::value<unsigned>(&threads)->default_value(0), "number of threads to use")
@@ -49,26 +50,18 @@ int main(int argc, char **argv){
    // cout << "Instance loaded!" << endl;
    // inst->print();
 
-   bool heuristic_solution = true;
-
-   if (heuristic_solution) {
-   	  
-   	  VNS vns(inst);
-   	  Solution s = vns.run(verbose);
-
-   	  cout << "Total dist: " << s.getTotalDist() << endl;
-   	  cout << "Vehicles used: " << s.getVehiclesUsed() << endl;
+   if (vm.count("exact")) {
+      IloEnv env;
+      Model m(env, inst);
+      m.run(cplex_timelimit, threads, verbose);
+      env.end();
    }
    else {
-  
-	  IloEnv env;
-	  Model m(env, inst);
-	  m.run(cplex_timelimit, threads, verbose);
-  
-	  env.end();
-	  delete inst;
-	}
+      VNS vns(inst);
+      vns.run(verbose);
+   }
 
 
+   delete inst;
    return 0;
 }
