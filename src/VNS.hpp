@@ -8,7 +8,7 @@ class VNS {
 public:
    VNS(Instance* inst);
    ~VNS();
-   Solution run(const bool verbose);
+   void run(const bool verbose);
    
 private:
    Instance* m_instance;

@@ -24,6 +24,8 @@ public:
    void addToRoute(const unsigned u, const unsigned v, const unsigned k);  // Add v after u in route k
    void remFromRoute(const unsigned u, const unsigned v, const unsigned k);// Remove v (after u) from route k
    
+   void print(); // Print each route
+
 private:
    Instance* m_instance;
    std::vector<std::vector<unsigned>> m_succ; // Successor of each customer
@@ -33,5 +35,5 @@ private:
    std::vector<unsigned> m_routeSize;     // Number of clients in a route
    std::vector<unsigned> m_routeLoad;     // Load of the vehicle attending the route
    std::vector<double> m_customerTime;    // Time at which a customer is attended
-   std::vector<unsigned> m_customerRoute; // Index of the route the customer is in
+   std::vector<int> m_customerRoute; // Index of the route the customer is in
  };

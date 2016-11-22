@@ -15,19 +15,21 @@ VNS::~VNS(){
    // empty
 }
 
-Solution VNS::run(const bool verbose) {
+void VNS::run(const bool verbose) {
    Solution s = tonn();
    
-   /*
-   unsigned n = 0, n_max = 2;
-   do {
-      // Shake; Generate a point s' at random from the nth neighborhood of s
-      // LocalSearch; Apply LS with s' as initial solution. Obtain s''.
-      // Acceptance; If this is a local optimum, then s = s'', n = 0. Else n++.
-   } while (n < n_max);
-   */
+   // unsigned n = 0, n_max = 2;
+   // do {
+   //    // Shake; Generate a point s' at random from the nth neighborhood of s
+   //    // LocalSearch; Apply LS with s' as initial solution. Obtain s''.
+   //    // Acceptance; If this is a local optimum, then s = s'', n = 0. Else n++.
+   // } while (n < n_max);
 
-   return s;
+   if (verbose) {
+      s.print();
+   }
+   cout << "Total dist: " << s.getTotalDist() << endl;
+   cout << "Vehicles used: " << s.getVehiclesUsed() << endl;
 }
 
 /*
@@ -53,15 +55,15 @@ Solution VNS::tonn() {
    unsigned currentRoute = 0;
    unsigned previousCustomer = 0;
    while (unroutedCount > 0) {
-   	  // initialize "nearest" with the maximum value for double variables
+   	// initialize "nearest" with the maximum value for double variables
       double nearest = std::numeric_limits<double>::max();
-      unsigned nearestIndex = -1;
+      unsigned nearestIndex = 0;
       
       for (unsigned i = 1; i <= m_instance->getCustomers(); i++) {
          if (unrouted[i] && m_instance->getDistance(previousCustomer, i) < nearest) {
             // Check feasibility
             if (s.getRouteLoad(currentRoute) + m_instance->getDemand(i) <= m_instance->getCapacity()
-             && s.getCustomerTime(previousCustomer) + m_instance->getDistance(previousCustomer, i) + m_instance->getService(i) <= m_instance->getEtw(i)) {
+             && s.getCustomerTime(previousCustomer) + m_instance->getDistance(previousCustomer, i) /*+ m_instance->getService(i)*/ <= m_instance->getEtw(i)) {
                
                nearest = m_instance->getDistance(previousCustomer, i);
                nearestIndex = i;
@@ -70,20 +72,22 @@ Solution VNS::tonn() {
       }
 
       // Add nearest feasible customer to route
-      if (nearestIndex != (unsigned)(-1)) {
+      if (nearestIndex > 0) {
+         // cout << "Added " << nearestIndex << " to route " << currentRoute << endl;
          s.addToRoute(previousCustomer, nearestIndex, currentRoute);
          unroutedCount--;
          unrouted[nearestIndex] = 0;
-         previousCustomer = nearestIndex;
+         previousCustomer = nearestIndex;         
       }
       else { // Add new route if there isn't any feasible insertion
+         // cout << "Created new route" << endl;
          currentRoute++;
          previousCustomer = 0;
 
-         if(currentRoute >= m_instance->getVehicles()){
-         	cout << "ERROR (tonn): Ran out of vehicles. Percentage of clients served: " << (double)100*(m_instance->getCustomers() - unroutedCount)/m_instance->getCustomers() << "\%" << endl;
-         	exit(0);
-         }
+         // if(currentRoute >= m_instance->getVehicles()){
+         // 	cout << "ERROR (tonn): Ran out of vehicles. Percentage of clients served: " << (double)100*(m_instance->getCustomers() - unroutedCount)/m_instance->getCustomers() << "\%" << endl;
+         //    exit(0);
+         // }
       }
    }
 
@@ -93,10 +97,10 @@ Solution VNS::tonn() {
 Solution VNS::twoOpt(Solution s, const unsigned k) {
    /*unsigned ci  = 0;
    do {
-      unsigned cii = s->getSuccessor(ci, k);
-      unsigned cj  = s->getSuccessor(cii, k);
+      unsigned cii = s.getSuccessor(ci, k);
+      unsigned cj  = s.getSuccessor(cii, k);
       while (cii != 0 && cj != 0) {
-         unsigned cjj = s->getSuccessor(cj, k);
+         unsigned cjj = s.getSuccessor(cj, k);
 
          double delta = m_instance->getDistance(ci, cj)  + m_instance->getDistance(cii, cjj)
                       - m_instance->getDistance(ci, cii) - m_instance->getDistance(cj, cjj);
@@ -104,6 +108,12 @@ Solution VNS::twoOpt(Solution s, const unsigned k) {
          // If the new route is shorter
          if (delta < 0) {
             // Check feasibility
+            // From ci to the end of the route, verify each time window
+            unsigned c = ci;
+            do {
+               // unsigned tcj = m_instance->getService(cj) + max((double)m_instance->getBtw(cj), (s.getCustomerTime(ci) + m_instance->getDistance(ci, cj)));
+               c = s.getSuccessor(c, k);
+            } while (c != 0);
          }
 
          cj = cjj;
