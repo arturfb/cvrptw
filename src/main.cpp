@@ -44,6 +44,8 @@ int main(int argc, char **argv){
       verbose = 1;
    }
 
+   std::srand ( unsigned ( std::time(0) ) );
+
    // cout << iname[0] << endl;
    Instance* inst =  new Instance();
    inst->loadFromFile(iname[0]);
