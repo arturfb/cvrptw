@@ -191,18 +191,18 @@ Solution VNS::moveCustomerOpt(Solution s){
 			unsigned kj = s.getCustomerRoute(j);
 			if(i != j){
 				// check feasibility (capacity and time-window)
-				if(s.getRouteLoad(kj) + m_instance->getDemand(i) <= m_instance.getCapacity()
-					&& s.getCustomerTime(j) + m_instance->getDistance(j,i) <= m_instance.getEtw(i)){
+				if(s.getRouteLoad(kj) + m_instance->getDemand(i) <= m_instance->getCapacity()
+					&& s.getCustomerTime(j) + m_instance->getDistance(j,i) <= m_instance->getEtw(i)){
 					
 					// d1: the cost of removing customer 'i' from route 'ki'
-					double d1 = - m_instance->getDistance(s.getPredecessor(i),i) - m_instance->getDistance(i,s.getSuccessor(i)) + m_instance->getDistance(s.getPredecessor(i),s.getSuccessor(i));
+					double d1 = - m_instance->getDistance(s.getPredecessor(i,ki),i) - m_instance->getDistance(i,s.getSuccessor(i,ki)) + m_instance->getDistance(s.getPredecessor(i,ki),s.getSuccessor(i,ki));
 
 					// d2: the cost of adding customer 'i' to route 'kj'
-					double d2 = - m_instance->getDistance(j,s.getSuccessor(j)) + m_instance->getDistance(j,i) + m_instance->getDistance(i,s.getSuccessor(j));
+					double d2 = - m_instance->getDistance(j,s.getSuccessor(j,kj)) + m_instance->getDistance(j,i) + m_instance->getDistance(i,s.getSuccessor(j,kj));
 
 					// check if current neighbor has a better cost
 					if( d1 + d2 < 0 ){
-						s.remFromRoute(s.getPredecessor(i),i,ki);
+						s.remFromRoute(s.getPredecessor(i,ki),i,ki);
 						s.addToRoute(j,i,kj);
 
 						return s;
@@ -214,5 +214,5 @@ Solution VNS::moveCustomerOpt(Solution s){
 	}
 
 	/* a local minimum has been reached */
-	return -1;
+	return NULL;
 }
