@@ -29,6 +29,7 @@ void VNS::run(const bool verbose) {
    } while (!local_minimum);
 
    cout << "Iterations: " << iterations << endl;
+
    
    // unsigned n = 0, n_max = 2;
    // do {
@@ -154,7 +155,8 @@ Solution VNS::rtonn(Solution s){
    return s;
 }
 
-
+/* 2-opt (Marcelo, incompleta) */
+/*
 Solution VNS::twoOpt(Solution s, const unsigned k) {
    unsigned ci  = 0;
    do {
@@ -229,27 +231,77 @@ Solution VNS::twoOpt(Solution s, const unsigned k) {
 
    return s;
 }
+*/
 
-/*Solution VNS::twoOpt(Solution s, const unsigned k) {
+/*
+   2opt local search (First improvement, O(n^3))
+*/
+void VNS::twoOpt(Solution& s, const unsigned k) {
    unsigned ci  = 0;
    do {
       unsigned cii = s.getSuccessor(ci, k);
       unsigned cj  = s.getSuccessor(cii, k);
+      
       while (cii != 0 && cj != 0) {
          unsigned cjj = s.getSuccessor(cj, k);
 
+         // Delta for the total route distance
          double delta = m_instance->getDistance(ci, cj)  + m_instance->getDistance(cii, cjj)
                       - m_instance->getDistance(ci, cii) - m_instance->getDistance(cj, cjj);
+
 
          // If the new route is shorter
          if (delta < 0) {
             // Check feasibility
-            // From ci to the end of the route, verify each time window
-            unsigned c = ci;
-            do {
-               // unsigned tcj = m_instance->getService(cj) + max((double)m_instance->getBtw(cj), (s.getCustomerTime(ci) + m_instance->getDistance(ci, cj)));
-               c = s.getSuccessor(c, k);
-            } while (c != 0);
+            bool feasible = 1;
+            // (1) Check new time at j;
+            double arrival = max((double)m_instance->getBtw(cj), (s.getCustomerTime(ci) + m_instance->getDistance(ci,cj)));
+            double departure = arrival + m_instance->getService(cj); 
+            if (arrival > m_instance->getEtw(cj)) {
+               feasible = 0;
+               break;
+            }
+            
+            // (2) then check from j-1 to i+1;
+            unsigned currentCustomer = s.getPredecessor(cj, k);
+            while (currentCustomer != ci) {
+               arrival = max((double)m_instance->getBtw(currentCustomer), (departure + m_instance->getDistance(currentCustomer,s.getSuccessor(currentCustomer, k))));
+               if (arrival > m_instance->getEtw(currentCustomer)) {
+                  feasible = 0;
+                  break;
+               }
+               departure = arrival + m_instance->getService(currentCustomer);
+               currentCustomer = s.getPredecessor(currentCustomer, k);
+            }
+            if (!feasible) {
+               break;
+            }
+
+            // (3) check new time at j+1;
+            arrival = max((double)m_instance->getBtw(cjj), (departure + m_instance->getDistance(cii,cjj)));
+            if (arrival > m_instance->getEtw(cjj)) {
+               break;
+            }
+            departure = arrival + m_instance->getService(cjj);
+            
+            // (4) and then the rest of the route.
+            currentCustomer = s.getSuccessor(cjj,k);
+            while (currentCustomer != 0) {
+               arrival = max((double)m_instance->getBtw(currentCustomer), (departure + m_instance->getDistance(currentCustomer,s.getPredecessor(currentCustomer, k))));
+               if (arrival > m_instance->getEtw(currentCustomer)) {
+                  feasible = 0;
+                  break;
+               }
+               departure = arrival + m_instance->getService(currentCustomer);
+               currentCustomer = s.getSuccessor(currentCustomer, k);
+            }
+            if (!feasible) {
+               break;
+            }
+
+            
+            // After all the feasibility checks, perform exchange
+            s.exchange(ci, cj, k);
          }
 
          cj = cjj;
@@ -257,9 +309,83 @@ Solution VNS::twoOpt(Solution s, const unsigned k) {
 
       ci = cii;
    } while (ci != 0);
+}
 
-   return s;
-}*/
+/*
+   2opt local search (O(n^2))
+*/
+// void VNS::twoOpt(Solution& s, const unsigned k) {
+//    // This method implements an approach to evaluate feasibility in constant time.
+//    // See "Sequential and parallel local search for the time-constrained traveling salesman problem",
+//    // (Kindervater et al., 1993) for proofs and explanations.
+
+//    bool restart = 0;
+//    unsigned ci  = 0;
+//    do {
+//       unsigned cii = s.getSuccessor(ci, k);
+//       unsigned cj  = s.getSuccessor(cii, k);
+
+
+//       // Travel time for the path i+1 to j-1
+//       double T = 0;
+//       // Waiting time for the path i+1 to j-1
+//       double W = 0;
+//       // Maximum forward shift in time that wouldn't cause infeasibility
+//       double S = 0;
+//       // TODO: W and S initialization
+//       // double S = m_instance->getEtw(cii) -;
+
+
+      
+//       while (cii != 0 && cj != 0) {
+//          unsigned cjj = s.getSuccessor(cj, k);
+//          unsigned pcj = s.getPredecessor(cj,k);
+         
+//          // Departure time for cj
+//          double dcj = m_instance->getService(cj) + max((double)m_instance->getBtw(cj), (s.getCustomerTime(ci) + m_instance->getDistance(ci,cj)));
+//          // Departure time for the predecessor of cj (before the addition of the edge to j)
+//          double dpcj = m_instance->getService(pcj) + max((double)m_instance->getBtw(pcj), (s.getCustomerTime(ci) + m_instance->getDistance(ci,pcj)));
+
+//          // Difference between new and old arrival time at j-1
+//          double d = dcj + m_instance->getDistance(pcj, cj) - dpcj;
+
+         
+//          // Update variables
+//          T += m_instance->getDistance(pcj, cj) + m_instance->getService(pcj);
+//          W = max(W - d, 0.0);
+//          S = min((double)m_instance->getEtw(cj) - dcj, S - d); 
+
+
+//          // Departure time for cjj after edge exchange
+//          double dcjj = m_instance->getService(cjj) + max((double)m_instance->getBtw(cjj), (dcj + T + W + m_instance->getDistance(cii,cjj)));
+//          // Departure time for cjj before the edge exchange
+//          double current_dcjj = m_instance->getService(cjj) + max((double)m_instance->getBtw(cjj), (s.getCustomerTime(cj) + m_instance->getDistance(cj,cjj)));
+
+
+//          // Delta for the total route distance
+//          double delta = m_instance->getDistance(ci, cj)  + m_instance->getDistance(cii, cjj)
+//                       - m_instance->getDistance(ci, cii) - m_instance->getDistance(cj, cjj);
+
+
+//          // If the new route is shorter and feasible
+//          if (delta < 0 && /*S >= 0 &&*/ dcjj < current_dcjj) {
+//             // Perform exchange
+//             s.exchange(ci,cj,k);
+//             restart = 1;
+//             break;
+//          }
+
+//          cj = cjj;
+//       }
+
+//       ci = cii;
+      
+//       // Restart the search if an improvement was found
+//       if (restart) {
+//          // Restart
+//       }
+//    } while (ci != 0);
+// }
 
 /*
 	Implements a local search on the "move-customer" inter-route neighborhood
