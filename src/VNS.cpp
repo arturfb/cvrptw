@@ -154,8 +154,84 @@ Solution VNS::rtonn(Solution s){
    return s;
 }
 
+
 Solution VNS::twoOpt(Solution s, const unsigned k) {
-   /*unsigned ci  = 0;
+   unsigned ci  = 0;
+   do {
+      unsigned cii = s.getSuccessor(ci, k);
+      unsigned cj  = s.getSuccessor(cii, k);
+      while (cii != 0 && cj != 0) {
+         unsigned cjj = s.getSuccessor(cj, k);
+
+         double delta = m_instance->getDistance(ci, cj)  + m_instance->getDistance(cii, cjj)
+                      - m_instance->getDistance(ci, cii) - m_instance->getDistance(cj, cjj);
+
+
+         // If the new route is shorter
+         if (delta < 0) {
+         	// Check feasibility
+         	bool feasible = true;
+            // Starting from the depot, check the time window of each customer 'c' in the k-th route
+            unsigned c = 0;
+            // Let 'at' denote the arrival time at the current customer
+            unsigned at = 0;
+            for(int i = 0; i < s.getRouteSize(k); i++) {
+            	// Let 'sc' denote the successor of customer 'c'
+            	unsigned sc;
+
+            	// If 'c' is one of the following customers: ci, cj, cii or cjj, we must:
+            	// 1. manually enter its successor 'sc' and
+            	// 2. if 'c' is one of the following customers: ci, cjj: reverse the route's orientation
+            	switch(c) {
+            		case ci:
+            			if(succ) 	sc = cj;
+            			else 		sc = m_instance->getPredecessor(c,k);
+            			break;
+            		case cj:
+            			if(succ) 	{ sc = ci; succ = false; }
+            			else 		sc = m_instance->getPredecessor(c,k);
+            			break;
+            		case cii:
+            			sc = cjj;
+            			break;
+            		case cjj:
+            			sc = m_instance->getSuccessor(c,k);
+            			succ = false;
+            			break;
+            	}
+
+            	m_instance->getSuccessor(c,k);
+
+            	// Update the arrival time
+            	at = max(at + m_instance->getDistance(c,sc) + m_instance.getService(sc), m_instance->getBtw(sc));
+
+            	// Check if end time window is violated
+            	if (at > m_instance->getEtw(sc)) {
+            		feasible = false;
+            		break;
+            	}
+
+            	// Update the current customer
+            	c = sc;
+            }
+
+            if(feasible) {
+            	s.remFromRoute();
+            }
+         }
+
+         cj = cjj;
+      }
+
+      ci = cii;
+
+   } while (ci != 0);
+
+   return s;
+}
+
+/*Solution VNS::twoOpt(Solution s, const unsigned k) {
+   unsigned ci  = 0;
    do {
       unsigned cii = s.getSuccessor(ci, k);
       unsigned cj  = s.getSuccessor(cii, k);
@@ -180,10 +256,10 @@ Solution VNS::twoOpt(Solution s, const unsigned k) {
       }
 
       ci = cii;
-   } while (ci != 0);*/
+   } while (ci != 0);
 
    return s;
-}
+}*/
 
 /*
 	Implements a local search on the "move-customer" inter-route neighborhood
