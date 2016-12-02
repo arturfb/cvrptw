@@ -106,18 +106,68 @@ void Solution::addToRoute(const unsigned u, const unsigned v, const unsigned k) 
 }
 
 void Solution::remFromRoute(const unsigned u, const unsigned v, const unsigned k) {
+
    unsigned w = m_succ[k][v];
+
    m_succ[k][u] = w;
    m_pred[k][w] = u;
 
+   m_succ[k][v] = -1;
+   m_pred[k][v] = -1;
+
    // Update route dist, time, size and load
    m_routeSize[k]--;
+
    m_routeDist[k] -= m_instance->getDistance(u,v);
    m_routeDist[k] -= m_instance->getDistance(v,w);
    m_routeDist[k] += m_instance->getDistance(u,w);
+
    m_customerTime[w] = m_instance->getService(w) + std::max((double)m_instance->getBtw(w), (m_customerTime[u] + m_instance->getDistance(u,w)));
    m_routeLoad[k] -= m_instance->getDemand(v);
    m_customerRoute[v] = -1;
+}
+
+void Solution::checkEmptyRoute(const unsigned k) {
+
+	// If the route size dropped to 0, we update the number of vehicles and apply shifts to:
+    // m_succ[k], m_pred[k], m_routeDist[k], m_routeTime[k], m_routeSize[k], m_routeLoad[k]
+
+   if (k < m_succ.size()-1 && m_routeSize[k] == 0)
+   	{
+   		unsigned v = getVehiclesUsed();
+		
+		for (unsigned k1 = k+1; k1 < m_succ.size(); k1++) 
+		{
+			m_succ[k1-1] = m_succ[k1];
+			m_pred[k1-1] = m_pred[k1];
+
+			m_routeDist[k1-1] = m_routeDist[k1];
+			m_routeTime[k1-1] = m_routeTime[k1];
+			m_routeSize[k1-1] = m_routeSize[k1];
+			m_routeLoad[k1-1] = m_routeLoad[k1];
+		}
+
+		if ( v > 1 )
+		{
+			for(unsigned i = 0; i < m_instance->getCustomers(); i++)
+			{
+				m_succ[v-2][i] = m_pred[v-2][i] = 0;
+			}
+			
+			m_routeDist[v-2] = m_routeTime[v-2] = m_routeSize[v-2] = m_routeLoad[v-2] = 0;
+		}
+
+		for (unsigned k1 = 0; k1 < v-1; k1++)
+		{
+			unsigned cust = 0;
+			for(unsigned i = 0; i < m_routeSize[k1]; i++)
+			{
+				cust = m_succ[k1][cust];
+				if(cust == 0) break;
+				m_customerRoute[cust] = k1;
+			}
+		}
+   }
 }
 
 void Solution::exchange(const unsigned u, const unsigned v, const unsigned k) {

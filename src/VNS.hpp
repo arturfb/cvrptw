@@ -14,6 +14,8 @@ private:
    Instance* m_instance;
    Solution tonn(); // Time-oriented nearest-neighbor
    Solution rtonn(Solution s); // Relaxed version of Time-oriented nearest-neighbor
-   void twoOpt(Solution& s, const unsigned k);
-   Solution moveCustomerOpt(Solution s, bool& local_minimum);
+   Solution twoExchange(Solution s, const unsigned k);
+   Solution twoOpt(Solution s, const unsigned k);
+   Solution moveCustomer(Solution s);
+   Solution moveCustomerOpt(Solution s);
 };

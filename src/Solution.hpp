@@ -24,6 +24,7 @@ public:
 
    void addToRoute(const unsigned u, const unsigned v, const unsigned k);  // Add v after u in route k
    void remFromRoute(const unsigned u, const unsigned v, const unsigned k);// Remove v (after u) from route k
+   void checkEmptyRoute(const unsigned k); // check if route k is empty and update data structures accordingly
    void exchange(const unsigned u, const unsigned v, const unsigned k); // Exchange edges (u,succ[u]) and (v,succ[v]) for (u,v) and (succ[u],succ[v]) and reverse the path between them
    
    void print(); // Print each route

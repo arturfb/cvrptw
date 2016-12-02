@@ -20,27 +20,92 @@ void VNS::run(const bool verbose) {
    // generate constructive initial solution (Time-Oriented Nearest Neighbor)
    Solution s = tonn();
 
-   // apply a descent on the move-customer-opt neighborhood
-   int iterations = 0;
-   bool local_minimum = false;
+   cout << "Total dist: " << s.getTotalDist() << endl;
+   cout << "Vehicles used: " << s.getVehiclesUsed() << endl << endl;
+
+   // main body of the Variable Neighborhood Search
+   unsigned max_iter = 1000;
+   unsigned iter = 0;
    do {
-   		s = moveCustomerOpt(s,local_minimum);
-   		iterations++;
-   } while (!local_minimum);
+   		// n: current neighborhood ; n_max: number of neighborhoods
+   		unsigned n = 0, n_max = 2;
 
-   cout << "Iterations: " << iterations << endl;
+   		do {
+   				Solution s1 = Solution(m_instance);
+   				Solution s2 = Solution(m_instance);
 
-   
-   // unsigned n = 0, n_max = 2;
-   // do {
-   //    // Shake; Generate a point s' at random from the nth neighborhood of s
-   //    // LocalSearch; Apply LS with s' as initial solution. Obtain s''.
-   //    // Acceptance; If this is a local optimum, then s = s'', n = 0. Else n++.
-   // } while (n < n_max);
+   				// Shake; Generate a point s1 at random from the nth neighborhood of s
+   				if (n == 0)
+   				{
+   					s1 = moveCustomer(s);
+   				}
+   				else
+   				{
+   					unsigned v = s.getVehiclesUsed();
+   					unsigned k = rand()%v;
+
+   					do
+   					{
+   						k = rand()%v;
+   					} while (s.getRouteSize(k) <= 1);
+
+   					s1 = twoExchange(s,k);
+   				}
+
+   				s2 = s1;
+
+   				// Local search; Apply local search with s1 as initial solution. Obtain s2
+   				if (n == 0)
+   				{
+   					double cost;
+   					do
+   					{
+   						cost = s2.getTotalDist();
+   						s2 = moveCustomerOpt(s2);
+   					}
+   					while(s2.getTotalDist() < cost);
+   					
+   				}
+   				else
+   				{
+   					unsigned v = s.getVehiclesUsed();
+
+   					double cost;
+   					do
+   					{
+   						cost = s2.getTotalDist();
+
+   						for(unsigned k = 0; k < v; k++)
+   						if(s2.getRouteSize(k) > 1)
+   						{
+   							s2 = twoOpt(s2,k);
+   						}	
+   					}
+   					while(s2.getTotalDist() < cost);
+   				}
+
+   				// Acceptance; If f(s2) < f(s), then s = s2, n = 0. Else n++
+   				if (s2.getTotalDist() < s.getTotalDist())
+   				{
+   					s = s2;
+   					n = 0;
+   				}
+   				else
+   				{
+   					n++;
+   				}
+
+   		} while (n < n_max);
+
+   		iter++;
+
+   } while (iter < max_iter);
 
    if (verbose) {
       s.print();
    }
+
+   cout << "Iterations: " << iter << endl;
    cout << "Total dist: " << s.getTotalDist() << endl;
    cout << "Vehicles used: " << s.getVehiclesUsed() << endl;
 }
@@ -234,15 +299,95 @@ Solution VNS::twoOpt(Solution s, const unsigned k) {
 */
 
 /*
+   2-exchange neighborhood (returns a solution in the 2-exchange neighborhood of 's')
+*/
+Solution VNS::twoExchange(Solution s, const unsigned k) {
+
+   // randomize 'initial_ci'
+   unsigned aux = rand()%(s.getRouteSize(k));
+   unsigned initial_ci = 0;
+   for (unsigned i = 0; i < aux; i++) initial_ci = s.getSuccessor(initial_ci, k);
+
+   unsigned ci  = initial_ci;
+   do {
+
+      unsigned cii = s.getSuccessor(ci, k);
+      unsigned cj  = s.getSuccessor(cii, k);
+
+      while (cj != ci) {
+
+         unsigned cjj = s.getSuccessor(cj, k);
+
+         // Check feasibility
+         bool feasible = 1;
+         
+         // (1) Check new time at j;
+         double arrival = max((double)m_instance->getBtw(cj), (s.getCustomerTime(ci) + m_instance->getDistance(ci,cj)));
+         double departure = arrival + m_instance->getService(cj); 
+         if (arrival > m_instance->getEtw(cj)) {
+            feasible = 0;
+         }
+         
+         // (2) then check from j-1 to i+1;
+         unsigned currentCustomer = s.getPredecessor(cj, k);
+         while (currentCustomer != ci) {
+            arrival = max((double)m_instance->getBtw(currentCustomer), (departure + m_instance->getDistance(currentCustomer,s.getSuccessor(currentCustomer, k))));
+            if (arrival > m_instance->getEtw(currentCustomer)) {
+               feasible = 0;
+            }
+            departure = arrival + m_instance->getService(currentCustomer);
+            currentCustomer = s.getPredecessor(currentCustomer, k);
+         }
+
+         // (3) check new time at j+1;
+         arrival = max((double)m_instance->getBtw(cjj), (departure + m_instance->getDistance(cii,cjj)));
+         if (arrival > m_instance->getEtw(cjj)) {
+         	feasible = 0;
+         }
+         departure = arrival + m_instance->getService(cjj);
+         
+         // (4) and then the rest of the route.
+         currentCustomer = s.getSuccessor(cjj,k);
+         while (currentCustomer != ci) {
+            arrival = max((double)m_instance->getBtw(currentCustomer), (departure + m_instance->getDistance(currentCustomer,s.getPredecessor(currentCustomer, k))));
+            if (arrival > m_instance->getEtw(currentCustomer)) {
+               feasible = 0;
+            }
+            departure = arrival + m_instance->getService(currentCustomer);
+            currentCustomer = s.getSuccessor(currentCustomer, k);
+         }
+
+         // After all the feasibility checks, perform exchange
+         if(feasible) {
+         	s.exchange(ci, cj, k);
+         	return s;
+         }
+
+         cj = cjj;
+      }
+
+      ci = cii;
+   } while (ci != initial_ci);
+
+   return s;
+}
+
+/*
    2opt local search (First improvement, O(n^3))
 */
-void VNS::twoOpt(Solution& s, const unsigned k) {
-   unsigned ci  = 0;
+Solution VNS::twoOpt(Solution s, const unsigned k) {
+   
+   // randomize 'initial_ci'
+   unsigned aux = rand()%(s.getRouteSize(k));
+   unsigned initial_ci = 0;
+   for (unsigned i = 0; i < aux; i++) initial_ci = s.getSuccessor(initial_ci, k);
+
+   unsigned ci  = initial_ci;
    do {
       unsigned cii = s.getSuccessor(ci, k);
       unsigned cj  = s.getSuccessor(cii, k);
-      
-      while (cii != 0 && cj != 0) {
+
+      while (cj != ci) {
          unsigned cjj = s.getSuccessor(cj, k);
 
          // Delta for the total route distance
@@ -251,15 +396,16 @@ void VNS::twoOpt(Solution& s, const unsigned k) {
 
 
          // If the new route is shorter
-         if (delta < 0) {
+         if (delta < 0 && abs(delta) > 1e-6) {
+
             // Check feasibility
             bool feasible = 1;
+            
             // (1) Check new time at j;
             double arrival = max((double)m_instance->getBtw(cj), (s.getCustomerTime(ci) + m_instance->getDistance(ci,cj)));
             double departure = arrival + m_instance->getService(cj); 
             if (arrival > m_instance->getEtw(cj)) {
                feasible = 0;
-               break;
             }
             
             // (2) then check from j-1 to i+1;
@@ -268,19 +414,15 @@ void VNS::twoOpt(Solution& s, const unsigned k) {
                arrival = max((double)m_instance->getBtw(currentCustomer), (departure + m_instance->getDistance(currentCustomer,s.getSuccessor(currentCustomer, k))));
                if (arrival > m_instance->getEtw(currentCustomer)) {
                   feasible = 0;
-                  break;
                }
                departure = arrival + m_instance->getService(currentCustomer);
                currentCustomer = s.getPredecessor(currentCustomer, k);
-            }
-            if (!feasible) {
-               break;
             }
 
             // (3) check new time at j+1;
             arrival = max((double)m_instance->getBtw(cjj), (departure + m_instance->getDistance(cii,cjj)));
             if (arrival > m_instance->getEtw(cjj)) {
-               break;
+            	feasible = 0;
             }
             departure = arrival + m_instance->getService(cjj);
             
@@ -290,25 +432,25 @@ void VNS::twoOpt(Solution& s, const unsigned k) {
                arrival = max((double)m_instance->getBtw(currentCustomer), (departure + m_instance->getDistance(currentCustomer,s.getPredecessor(currentCustomer, k))));
                if (arrival > m_instance->getEtw(currentCustomer)) {
                   feasible = 0;
-                  break;
                }
                departure = arrival + m_instance->getService(currentCustomer);
                currentCustomer = s.getSuccessor(currentCustomer, k);
             }
-            if (!feasible) {
-               break;
-            }
 
-            
             // After all the feasibility checks, perform exchange
-            s.exchange(ci, cj, k);
+            if(feasible) {
+            	s.exchange(ci, cj, k);
+            	return s;
+            }
          }
 
          cj = cjj;
       }
 
       ci = cii;
-   } while (ci != 0);
+   } while (ci != initial_ci);
+
+   return s;
 }
 
 /*
@@ -387,11 +529,7 @@ void VNS::twoOpt(Solution& s, const unsigned k) {
 //    } while (ci != 0);
 // }
 
-/*
-	Implements a local search on the "move-customer" inter-route neighborhood
-	* the move-customer neighborhood of S is defined as the set of solutions S' generated by removing one customer of its respective route and inserting it into another one
-*/
-Solution VNS::moveCustomerOpt(Solution s, bool& local_minimum){
+Solution VNS::moveCustomer(Solution s){
 
 	// shuffle the order in which customers are to be traversed in order to randomize the search
 	vector<unsigned> shuffledCustomers(m_instance->getCustomers(),0);
@@ -406,11 +544,54 @@ Solution VNS::moveCustomerOpt(Solution s, bool& local_minimum){
 		// get the route 'ki' to which customer 'i' belongs
 		unsigned ki = s.getCustomerRoute(i);
 
+		if(s.getRouteSize(ki) <= 1) continue;
+
 		// for each other customer 'j' (including depot)
 		for(unsigned j : shuffledCustomers){
 			// get the route 'kj' to which customer 'j' belongs
 			unsigned kj = s.getCustomerRoute(j);
 			if(i != j && ki != kj){
+				// check feasibility (capacity and time-window)
+				if(s.getRouteLoad(kj) + m_instance->getDemand(i) <= m_instance->getCapacity()
+					&& s.getCustomerTime(j) + m_instance->getDistance(j,i) <= m_instance->getEtw(i)){
+
+					s.remFromRoute(s.getPredecessor(i,ki),i,ki);
+					s.addToRoute(j,i,kj);
+
+					return s;
+				}
+
+			}
+		}
+	}
+
+	return s;
+}
+
+Solution VNS::moveCustomerOpt(Solution s){
+
+	// shuffle the order in which customers are to be traversed in order to randomize the search
+	vector<unsigned> shuffledCustomers(m_instance->getCustomers(),0);
+	for(unsigned i = 0; i < m_instance->getCustomers(); i++)
+	{
+		shuffledCustomers[i] = i+1;
+	}
+	random_shuffle(shuffledCustomers.begin(),shuffledCustomers.end());
+
+	// for each customer 'i'
+	for(unsigned i : shuffledCustomers)
+	{
+		// get the route 'ki' to which customer 'i' belongs
+		unsigned ki = s.getCustomerRoute(i);
+
+		// for each other customer 'j' (including depot)
+		for(unsigned j : shuffledCustomers)
+		{
+			// get the route 'kj' to which customer 'j' belongs
+			unsigned kj = s.getCustomerRoute(j);
+			
+			if(i != j && ki != kj)
+			{
 				// check feasibility (capacity and time-window)
 				if(s.getRouteLoad(kj) + m_instance->getDemand(i) <= m_instance->getCapacity()
 					&& s.getCustomerTime(j) + m_instance->getDistance(j,i) <= m_instance->getEtw(i)){
@@ -422,10 +603,11 @@ Solution VNS::moveCustomerOpt(Solution s, bool& local_minimum){
 					double d2 = - m_instance->getDistance(j,s.getSuccessor(j,kj)) + m_instance->getDistance(j,i) + m_instance->getDistance(i,s.getSuccessor(j,kj));
 
 					// check if current neighbor has a better cost
-					if( d1 + d2 < 0 ){
+					if( d1 + d2 < 0 )
+					{
 						s.remFromRoute(s.getPredecessor(i,ki),i,ki);
 						s.addToRoute(j,i,kj);
-						local_minimum = false;
+
 						return s;
 					}
 				}
@@ -434,7 +616,5 @@ Solution VNS::moveCustomerOpt(Solution s, bool& local_minimum){
 		}
 	}
 
-	/* a local minimum has been reached */
-	local_minimum = true;
 	return s;
 }
