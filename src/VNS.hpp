@@ -1,6 +1,7 @@
 #pragma once
 
-
+#include <iostream>
+#include <fstream>
 #include "Solution.hpp"
 
 class VNS {
@@ -8,7 +9,7 @@ class VNS {
 public:
    VNS(Instance* inst);
    ~VNS();
-   void run(const bool verbose);
+   void run(const bool verbose, int vopt, double dopt, std::ofstream& results);
    
 private:
    Instance* m_instance;
