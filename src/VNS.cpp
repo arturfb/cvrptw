@@ -16,23 +16,28 @@ VNS::~VNS(){
    // empty
 }
 
-void VNS::run(const bool verbose, int vopt, double dopt, ofstream& results) 
+// void VNS::run(const bool verbose, int vopt, double dopt, ofstream& results) 
+void VNS::run(const bool verbose) 
 {
 	clock_t begin, end;
 
 	begin =clock();
 	// generate constructive initial solution (Time-Oriented Nearest Neighbor)
 	Solution s = tonn();
+
 	end = clock();
 
-	results << s.getVehiclesUsed() << " " << s.getTotalDist() << " " << (s.getVehiclesUsed() - (double)vopt)/(double)vopt << " " << (s.getTotalDist() - dopt)/dopt << " " << double(end - begin) / CLOCKS_PER_SEC << " ";
+	// results << s.getVehiclesUsed() << " " << s.getTotalDist() << " " << (s.getVehiclesUsed() - (double)vopt)/(double)vopt << " " << (s.getTotalDist() - dopt)/dopt << " " << double(end - begin) / CLOCKS_PER_SEC << " ";
+   cout << s.getVehiclesUsed() << " " << s.getTotalDist() << " " << double(end - begin) / CLOCKS_PER_SEC << " ";
 
-	begin = clock();
+	
+   begin = clock();
 
 	// main body of the Variable Neighborhood Search
 	// max_iter: maximum number of iterations without improvement
-	unsigned max_iter = 1000;
+	unsigned max_iter = 100;
 	unsigned iter = 0;
+   unsigned total_iter = 0;
 	do {
 			// n: current neighborhood ; n_max: number of neighborhoods
 			unsigned n = 0, n_max = 2;
@@ -114,7 +119,7 @@ void VNS::run(const bool verbose, int vopt, double dopt, ofstream& results)
 			} while (n < n_max);
 
 			if(!improvement) iter++;
-
+         total_iter++;
 	} while (iter < max_iter);
 
 	if (verbose)
@@ -124,7 +129,8 @@ void VNS::run(const bool verbose, int vopt, double dopt, ofstream& results)
 
 	end = clock();
 
-	results << s.getVehiclesUsed() << " " << s.getTotalDist() << " " << (s.getVehiclesUsed() - (double)vopt)/(double)vopt << " " << (s.getTotalDist() - dopt)/dopt << " " << double(end - begin) / CLOCKS_PER_SEC << endl;
+	// results << s.getVehiclesUsed() << " " << s.getTotalDist() << " " << (s.getVehiclesUsed() - (double)vopt)/(double)vopt << " " << (s.getTotalDist() - dopt)/dopt << " " << double(end - begin) / CLOCKS_PER_SEC << endl;
+   cout << s.getVehiclesUsed() << " " << s.getTotalDist() << " " << double(end - begin) / CLOCKS_PER_SEC << " " << total_iter << endl;
 }
 
 /*
@@ -492,7 +498,8 @@ Solution VNS::moveCustomer(Solution s){
 			if(i != j && ki != kj){
 				// check feasibility (capacity and time-window)
 				if(s.getRouteLoad(kj) + m_instance->getDemand(i) <= m_instance->getCapacity()
-					&& s.getCustomerTime(j) + m_instance->getDistance(j,i) <= m_instance->getEtw(i)){
+					// && s.getCustomerTime(j) + m_instance->getDistance(j,i) <= m_instance->getEtw(i)){
+               && s.checkInsertionFeasibility(j,i,kj)) { 
 
 					s.remFromRoute(s.getPredecessor(i,ki),i,ki);
 					s.addToRoute(j,i,kj);
@@ -533,8 +540,9 @@ Solution VNS::moveCustomerOpt(Solution s){
 			{
 				// check feasibility (capacity and time-window)
 				if(s.getRouteLoad(kj) + m_instance->getDemand(i) <= m_instance->getCapacity()
-					&& s.getCustomerTime(j) + m_instance->getDistance(j,i) <= m_instance->getEtw(i)){
-					
+					// && s.getCustomerTime(j) + m_instance->getDistance(j,i) <= m_instance->getEtw(i)){
+					&& s.checkInsertionFeasibility(j,i,kj)) { 
+
 					// d1: the cost of removing customer 'i' from route 'ki'
 					double d1 = - m_instance->getDistance(s.getPredecessor(i,ki),i) - m_instance->getDistance(i,s.getSuccessor(i,ki)) + m_instance->getDistance(s.getPredecessor(i,ki),s.getSuccessor(i,ki));
 
@@ -556,4 +564,100 @@ Solution VNS::moveCustomerOpt(Solution s){
 	}
 
 	return s;
+}
+
+Solution VNS::shift2(Solution s) {
+   // for (unsigned k = 0; k < m_instance->getVehicles(); k++) {
+   //    if (s.getRouteSize(k) >= 2) {
+   //       for (unsigned i = 0; i < s.getRouteSize(k)-1; i++) {
+   //          unsigned ci = s.getSuccessor(i, k);
+   //          unsigned cii = s.getSuccessor(ci, k);
+         
+   //          for (unsigned kk = 0; kk < m_instance->getVehicles(); kk++) {
+   //             if (k != kk && s.getRouteSize(kk) >= 1) {
+   //                // Get first customer in candidate route
+   //                unsigned customer = s.getSuccessor(0, kk);
+   //                do {
+   //                   // TODO: check delta first
+   //                   // Check feasibility of insertion
+   //                   if (s.getRouteLoad(kk) + m_instance->getDemand(ci) + m_instance->getDemand(cii) &&
+   //                       ) {
+   //                      /* code */
+   //                   }
+
+   //                } while (customer != 0);
+   //             }
+   //          }
+   //       }
+   //    }
+   // }
+
+   return s;
+}
+
+/*
+   Swap neighborhood. Implements best improvement.
+*/
+Solution VNS::swap1(Solution s) {
+   double bestDelta = 1;
+   unsigned besti = 0, bestj = 0;
+
+   for (unsigned i = 1; i < m_instance->getCustomers(); i++) {
+      for (unsigned j = i + 1; j <= m_instance->getCustomers(); j++) {
+         unsigned ri = s.getCustomerRoute(i);
+         unsigned rj = s.getCustomerRoute(j);
+         if (ri != rj) {
+            unsigned pi = s.getPredecessor(i,ri);
+            unsigned pj = s.getPredecessor(j,rj);
+            // Check if the swap reduces the total distance
+            double delta = - m_instance->getDistance(pi,i) - m_instance->getDistance(i,s.getSuccessor(i,ri))
+                           + m_instance->getDistance(pi,j) + m_instance->getDistance(j,s.getSuccessor(i,ri))
+                           - m_instance->getDistance(pj,j) - m_instance->getDistance(j,s.getSuccessor(j,rj))
+                           + m_instance->getDistance(pj,i) + m_instance->getDistance(i,s.getSuccessor(j,rj));
+            // cout << delta << endl;
+            if (delta < 0) {
+               // Check feasibility
+               bool feasible = 0;
+               unsigned Di = m_instance->getDemand(i);
+               unsigned Dj = m_instance->getDemand(j);
+               if (Di > Dj) {
+                  if (s.getRouteLoad(rj) - Dj + Di <= m_instance->getCapacity()   &&
+                      s.checkInsertionFeasibility(pi, j, ri)  &&
+                      s.checkInsertionFeasibility(pj, i, rj)) {
+                     
+                     feasible = 1;  
+                  }
+               }
+               else {
+                  if (s.getRouteLoad(ri) - Di + Dj <= m_instance->getCapacity()   &&
+                      s.checkInsertionFeasibility(pi, j, ri)  &&
+                      s.checkInsertionFeasibility(pj, i, rj)) {
+
+                     feasible = 1;
+                  }   
+               }
+
+               if (feasible && delta <= bestDelta) {
+                  bestDelta = delta;
+                  besti = i;
+                  bestj = j;
+               }
+            }
+         }
+      }
+   }
+
+   if (bestDelta <= 0) {
+      unsigned ri = s.getCustomerRoute(besti);
+      unsigned rj = s.getCustomerRoute(bestj);
+      unsigned pi = s.getPredecessor(besti, ri);
+      unsigned pj = s.getPredecessor(bestj, rj);
+      s.remFromRoute(pi, besti, ri);
+      s.remFromRoute(pj, bestj, rj);
+      s.addToRoute(pi, bestj, ri);
+      s.addToRoute(pj, besti, rj);
+   }
+         
+
+   return s;
 }

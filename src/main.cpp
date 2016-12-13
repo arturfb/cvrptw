@@ -46,10 +46,10 @@ int main(int argc, char **argv){
    if (vm.count("verbose")) {
       verbose = 1;
    }
-
+   /*
 	// Initialize seed for the random number generator
 	std::srand ( unsigned ( std::time(0) ) );
-
+   
 	// Iterate over the directory of Cordeau's instances to solve each of them using VNS
 	struct dirent *pDirent; DIR *instancesDir;
 	instancesDir = opendir ("../../instances/cordeau");
@@ -106,8 +106,8 @@ int main(int argc, char **argv){
 	}
 	closedir (instancesDir);
 	results.close();
+   */
    
-   /*
    // cout << iname[0] << endl;
    Instance* inst =  new Instance();
    inst->loadFromFile(iname[0]);
@@ -126,6 +126,6 @@ int main(int argc, char **argv){
    }
 
    delete inst;
-   */
+   
    return 0;
 }

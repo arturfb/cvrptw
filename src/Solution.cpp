@@ -221,6 +221,39 @@ void Solution::exchange(const unsigned u, const unsigned v, const unsigned k) {
    }
 }
 
+bool Solution::checkInsertionFeasibility(const unsigned u, const unsigned v, const unsigned k) {
+   // (1) Check arrival time at v;
+   double arrival = max((double)m_instance->getBtw(v), (getCustomerTime(u) + m_instance->getDistance(u,v)));
+   double departure = arrival + m_instance->getService(v); 
+   if (arrival > m_instance->getEtw(v)) {
+      return 0;
+   }
+
+   // (2) Check arrival time at current successor of u;
+   unsigned currentCustomer = getSuccessor(u,k);
+   if (currentCustomer == 0) { // If u is the only customer in the route
+      return 1;
+   }
+   arrival = max((double)m_instance->getBtw(currentCustomer), (departure + m_instance->getDistance(v,currentCustomer)));
+   if (arrival > m_instance->getEtw(currentCustomer)) {
+      return 0;
+   }
+   departure = arrival + m_instance->getService(currentCustomer);
+
+   // (3) Check the rest of the route.
+   currentCustomer = getSuccessor(currentCustomer,k);
+   while (currentCustomer != 0) {
+      arrival = max((double)m_instance->getBtw(currentCustomer), (departure + m_instance->getDistance(currentCustomer,getPredecessor(currentCustomer, k))));
+      if (arrival > m_instance->getEtw(currentCustomer)) {
+         return 0;
+      }
+      departure = arrival + m_instance->getService(currentCustomer);
+      currentCustomer = getSuccessor(currentCustomer, k);
+   }
+
+   return 1;
+}
+
 void Solution::print() {
    unsigned routeCount = 0;
    for (unsigned k = 0; k < m_succ.size(); k++) {
