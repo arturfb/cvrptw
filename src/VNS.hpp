@@ -22,4 +22,5 @@ private:
    Solution moveCustomerOpt(Solution s);
    Solution shift2(Solution s); // Two consecutive customers are transfered to the end of a different route
    Solution swap1(Solution s); // Swap two customers from different routes
+   Solution perturb(Solution s, double factor); // Perturb a solution by removing (n * factor) customers and reinserting them in new routes 
 };

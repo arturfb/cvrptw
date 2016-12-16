@@ -138,9 +138,15 @@ void VNS::run(const bool verbose)
 	* starts at the first route
 	* starting at the depot, searches for the nearest feasible customer to add to the current route
 	* if there is no such customer, proceed to the next route
+   See Algorithms for the Vehicle Routing and Scheduling Problem with Time Window Constraints, Solomon (1987)
+   for a better understanding.
 */
 Solution VNS::tonn() {
    Solution s(m_instance);
+
+   double delta1 = 1.0; // Weight por physical distance
+   double delta2 = 0.0; // Weight for waiting time
+   double delta3 = 0.0; // Weight for urgency
    
    unsigned unroutedCount = m_instance->getCustomers();
    vector<char> unrouted(unroutedCount+1, 1); // 1 if customer is unrouted, 0 otherwise
@@ -154,12 +160,20 @@ Solution VNS::tonn() {
       unsigned nearestIndex = 0;
       
       for (unsigned i = 1; i <= m_instance->getCustomers(); i++) {
-         if (unrouted[i] && m_instance->getDistance(previousCustomer, i) < nearest) {
-            // Check feasibility (capacity and time-window)
-            if (s.getRouteLoad(currentRoute) + m_instance->getDemand(i) <= m_instance->getCapacity()
-             && s.getCustomerTime(previousCustomer) + m_instance->getDistance(previousCustomer, i) /*+ m_instance->getService(i)*/ <= m_instance->getEtw(i)) {
-               	nearest = m_instance->getDistance(previousCustomer, i);
-               	nearestIndex = i;
+         if (unrouted[i]) {
+            double dij = m_instance->getDistance(previousCustomer, i); // These variables are named according Solomon (1987)
+            double tij = max((double)m_instance->getBtw(i), (m_instance->getDistance(previousCustomer,i) + m_instance->getService(i))) - s.getCustomerTime(previousCustomer);
+            double vij = m_instance->getEtw(i) - (s.getCustomerTime(previousCustomer) + m_instance->getDistance(previousCustomer,i));
+
+            double cij = delta1 * dij + delta2 * tij + delta3 * vij; // Combined distance metric
+
+            if (cij < nearest) {
+               // Check feasibility (capacity and time-window)
+               if (s.getRouteLoad(currentRoute) + m_instance->getDemand(i) <= m_instance->getCapacity()
+                && s.getCustomerTime(previousCustomer) + m_instance->getDistance(previousCustomer, i) <= m_instance->getEtw(i)) {
+                  	nearest = cij;
+                  	nearestIndex = i;
+               }
             }
          }
       }
@@ -659,5 +673,10 @@ Solution VNS::swap1(Solution s) {
    }
          
 
+   return s;
+}
+
+Solution VNS::perturb(Solution s, double factor) {
+   // TODO
    return s;
 }
