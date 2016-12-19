@@ -29,7 +29,7 @@ void Instance::loadFromFile(const string file) {
    // Cordeau
    if (name.find("cordeau") != string::npos) {
       fs >> m_type >> m_vehicles >> m_customers >> m_depots;
-      m_vehicles = m_customers; // Override value as our approach also minimizes the number of used vehicles
+      m_vehicles = m_customers; // Overwrite value as our approach also minimizes the number of used vehicles
 
       m_D.resize(m_depots);
       m_Q.resize(m_depots);

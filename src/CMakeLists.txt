@@ -19,5 +19,5 @@ find_package(cplex)
 
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS} ${CPLEX_INCLUDE_DIRS})
 
-add_executable(cvrptw main.cpp Instance.cpp Model.cpp Solution.cpp VNS.cpp)
+add_executable(cvrptw main.cpp Instance.cpp Model.cpp Solution.cpp ILS.cpp)
 target_link_libraries(cvrptw ${Boost_LIBRARIES} ${CPLEX_LIBRARIES} rt)
